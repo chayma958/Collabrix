@@ -1,0 +1,50 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: collabrix
+      POSTGRES_PASSWORD: collabrix
+      POSTGRES_DB: collabrix
+    ports:
+      - "5432:5432"
+    volumes:
+      - collabrix_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U collabrix"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - backend/.env
+    environment:
+      DATABASE_URL: postgresql://collabrix:collabrix@postgres:5432/collabrix?schema=public
+      PORT: 3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "3000:3000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: /api
+    restart: unless-stopped
+    environment:
+      BACKEND_ORIGIN: http://backend:3000
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  collabrix_pgdata:
