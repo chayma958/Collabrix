@@ -2,6 +2,8 @@
 
 A collaborative project management platform: authentication, workspaces with roles, boards/columns/tasks, drag-and-drop Kanban, comments, checklists, file attachments, notifications, real-time sync, search, calendar view, and analytics.
 
+**Live Demo:** https://marrow-e-commerce.pages.dev/
+
 **Stack:** NestJS + Prisma + PostgreSQL (backend) · React + TypeScript + Vite + Tailwind CSS v4 (frontend) · Socket.io (real-time) · @dnd-kit (drag-and-drop) · Docker + Jenkins + Docker Hub + Render (CI/CD & deployment).
 
 ## Features
