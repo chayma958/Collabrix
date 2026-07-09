@@ -2,7 +2,7 @@
 
 A collaborative project management platform: authentication, workspaces with roles, boards/columns/tasks, drag-and-drop Kanban, comments, checklists, file attachments, notifications, real-time sync, search, calendar view, and analytics.
 
-**Stack:** NestJS + Prisma + PostgreSQL (backend) · React + TypeScript + Vite + Tailwind CSS v4 (frontend) · Socket.io (real-time) · @dnd-kit (drag-and-drop) · Docker + GitHub Actions + Render (CI/CD & deployment).
+**Stack:** NestJS + Prisma + PostgreSQL (backend) · React + TypeScript + Vite + Tailwind CSS v4 (frontend) · Socket.io (real-time) · @dnd-kit (drag-and-drop) · Docker + GitHub Actions (CI).
 
 ## Features
 
@@ -100,7 +100,7 @@ Run from the repo root (npm workspaces):
 |---|---|
 | `VITE_API_URL` | Backend base URL, e.g. `http://localhost:3000/api` |
 
-The production frontend Docker image doesn't use `VITE_API_URL` at runtime — it's built to call a relative `/api`, which nginx proxies to whatever `BACKEND_ORIGIN` is set to at container start (see `frontend/nginx.conf.template`). This is what lets the same image work unmodified in Docker Compose (`BACKEND_ORIGIN=http://backend:3000`) and on Render (`BACKEND_ORIGIN=https://<backend-service>.onrender.com`).
+The production frontend Docker image doesn't use `VITE_API_URL` at runtime — it's built to call a relative `/api`, which nginx proxies to whatever `BACKEND_ORIGIN` is set to at container start (see `frontend/nginx.conf.template`).
 
 ## Docker
 
@@ -114,16 +114,9 @@ docker compose logs -f backend   # tail logs
 docker compose down              # stop (add -v to also wipe the Postgres volume)
 ```
 
-## CI/CD
+## CI
 
-```
-GitHub push → Actions runs lint/build/test (status check)
-            → Render (watching the repo independently) builds each Dockerfile itself and deploys
-```
-
-`.github/workflows/ci-cd.yml` runs on every push/PR to `main` as a pure CI gate — lint, build, and test both workspaces (backend against a real Postgres service container, including e2e tests). It doesn't build images or deploy anything itself.
-
-Deployment is handled entirely by Render, which connects directly to the GitHub repo and builds `backend/Dockerfile` / `frontend/Dockerfile` on its own infrastructure whenever `main` changes — no registry, no deploy hooks, no GitHub Actions involvement needed for that part.
+`.github/workflows/ci.yml` runs on every push/PR to `main` — lint, build, and test both workspaces (backend against a real Postgres service container, including e2e tests).
 
 ## Project structure
 
