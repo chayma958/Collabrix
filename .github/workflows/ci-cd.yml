@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend lint, build, test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: collabrix
+          POSTGRES_PASSWORD: collabrix
+          POSTGRES_DB: collabrix
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U collabrix"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://collabrix:collabrix@localhost:5432/collabrix?schema=public
+      JWT_SECRET: ci-test-secret
+      JWT_EXPIRES_IN: 7d
+      PORT: 3000
+      CORS_ORIGIN: http://localhost:5173
+      # Not used by any test, but required to satisfy getOrThrow() calls in
+      # EmailService / GoogleStrategy constructors so the app can bootstrap.
+      GOOGLE_CLIENT_ID: ci-placeholder
+      GOOGLE_CLIENT_SECRET: ci-placeholder
+      GOOGLE_CALLBACK_URL: http://localhost:3000/api/auth/google/callback
+      RESEND_API_KEY: ci-placeholder
+      RESEND_FROM_EMAIL: ci@example.com
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run prisma:generate --workspace backend
+
+      - name: Apply migrations
+        working-directory: backend
+        run: npx prisma migrate deploy
+
+      - run: npm run lint --workspace backend
+
+      - run: npm run build --workspace backend
+
+      - name: Unit tests
+        run: npm test --workspace backend -- --passWithNoTests
+
+      - name: E2E tests
+        run: npm run test:e2e --workspace backend
+
+  frontend:
+    name: Frontend lint, typecheck, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run lint --workspace frontend
+
+      - run: npm run build --workspace frontend

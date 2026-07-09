@@ -1,4 +1,6 @@
 # Build context is the repo root (npm workspaces monorepo) — see docker-compose.yml.
+# Builds entirely inside Docker (on Render's build infrastructure in
+# production) — no host pre-build step required.
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
@@ -20,8 +22,9 @@ RUN npm run build --workspace frontend
 FROM nginx:1.27-alpine AS production
 COPY --from=build /app/frontend/dist /usr/share/nginx/html
 # Templated so the same image works against any backend host: Docker Compose's
-# service DNS name locally, or a Container App FQDN in Azure. nginx's official
-# entrypoint scripts run envsubst on *.template files at container startup.
+# service DNS name locally, or a stable Render service URL in production.
+# nginx's official entrypoint scripts run envsubst on *.template files at
+# container startup.
 COPY frontend/nginx.conf.template /etc/nginx/templates/default.conf.template
 ENV BACKEND_ORIGIN=http://backend:3000
 EXPOSE 80

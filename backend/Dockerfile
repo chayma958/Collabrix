@@ -1,4 +1,6 @@
 # Build context is the repo root (npm workspaces monorepo) — see docker-compose.yml.
+# Builds entirely inside Docker (on Render's build infrastructure in
+# production) — no host pre-build step required.
 
 FROM node:22-bookworm-slim AS build
 WORKDIR /app

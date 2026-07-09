@@ -2,9 +2,7 @@
 
 A collaborative project management platform: authentication, workspaces with roles, boards/columns/tasks, drag-and-drop Kanban, comments, checklists, file attachments, notifications, real-time sync, search, calendar view, and analytics.
 
-**Live Demo:** https://marrow-e-commerce.pages.dev/
-
-**Stack:** NestJS + Prisma + PostgreSQL (backend) · React + TypeScript + Vite + Tailwind CSS v4 (frontend) · Socket.io (real-time) · @dnd-kit (drag-and-drop) · Docker + Jenkins + Docker Hub + Render (CI/CD & deployment).
+**Stack:** NestJS + Prisma + PostgreSQL (backend) · React + TypeScript + Vite + Tailwind CSS v4 (frontend) · Socket.io (real-time) · @dnd-kit (drag-and-drop) · Docker + GitHub Actions + Render (CI/CD & deployment).
 
 ## Features
 
@@ -33,8 +31,6 @@ The frontend is a static SPA served by nginx, which also reverse-proxies `/api` 
 - Docker Desktop
 
 ## Quick start — Docker (whole app)
-
-The fastest way to run everything (Postgres + backend + frontend) with no local Node install required:
 
 ```bash
 cp backend/.env.example backend/.env
@@ -108,7 +104,7 @@ The production frontend Docker image doesn't use `VITE_API_URL` at runtime — i
 
 ## Docker
 
-- `backend/Dockerfile` — multi-stage build; production stage runs `prisma migrate deploy && node dist/main`.
+- `backend/Dockerfile` — multi-stage build; production stage runs `prisma migrate deploy && node dist/src/main`.
 - `frontend/Dockerfile` — multi-stage build; production stage is nginx serving the built SPA and proxying `/api` + `/socket.io` to `$BACKEND_ORIGIN`.
 - `docker-compose.yml` — wires up all three services with a named volume for Postgres data.
 
@@ -121,74 +117,19 @@ docker compose down              # stop (add -v to also wipe the Postgres volume
 ## CI/CD
 
 ```
-GitHub push → Jenkins → install deps → lint → test (backend, real Postgres)
-            → build frontend → build Docker images → push to Docker Hub → deploy to Render
+GitHub push → Actions runs lint/build/test (status check)
+            → Render (watching the repo independently) builds each Dockerfile itself and deploys
 ```
 
-The `Jenkinsfile` at the repo root runs on every push (via a GitHub webhook or polling, depending on how the Jenkins job is configured):
+`.github/workflows/ci-cd.yml` runs on every push/PR to `main` as a pure CI gate — lint, build, and test both workspaces (backend against a real Postgres service container, including e2e tests). It doesn't build images or deploy anything itself.
 
-1. **Install dependencies** — `npm ci`
-2. **Lint** — backend (eslint) and frontend (oxlint) in parallel
-3. **Test backend** — spins up a throwaway Postgres container, applies migrations, runs `build`, unit tests, and e2e tests
-4. **Build frontend** — `vite build`
-5. **Build Docker images** — both `backend/Dockerfile` and `frontend/Dockerfile`, tagged with the short commit SHA and `latest`
-6. **Push to Docker Hub** *(`main` branch only)*
-7. **Deploy to Render** *(`main` branch only)* — hits each service's Render deploy hook, which pulls the new `latest` image and redeploys
-
-Steps 6–7 need Docker Hub + Render set up and the matching Jenkins credentials configured — see below. Until those exist, the pipeline still runs and validates steps 1–5; only the push/deploy stages fail.
-
-### Jenkins prerequisites
-
-The Jenkins agent running this pipeline needs **Docker** and **Node.js 22** available on `PATH` (the backend test stage runs a Postgres container directly via the Docker CLI, and several stages call `npm`). A single "Docker host" agent with both installed is the simplest setup — this pipeline doesn't use Docker-in-Docker or a containerized agent.
-
-Set `DOCKERHUB_NAMESPACE` at the top of the `Jenkinsfile` to your own Docker Hub username/org before your first run.
-
-### One-time Docker Hub + Render setup
-
-1. **Docker Hub** — create two repositories: `<namespace>/collabrix-backend` and `<namespace>/collabrix-frontend` (or let the first push create them automatically, if your account allows it).
-
-2. **Render Postgres** — create a managed Postgres instance (Render dashboard → New → PostgreSQL). Note its **Internal Database URL**.
-
-3. **Render backend service** — New → Web Service → Deploy an existing image → `<namespace>/collabrix-backend:latest`. Set environment variables:
-
-   | Variable | Value |
-   |---|---|
-   | `DATABASE_URL` | the Render Postgres internal URL from step 2 |
-   | `JWT_SECRET` | a long random string |
-   | `JWT_EXPIRES_IN` | `7d` |
-   | `PORT` | `3000` |
-   | `CORS_ORIGIN` | the frontend service's URL (from step 4, added after it exists) |
-   | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` / `GOOGLE_CALLBACK_URL` | optional |
-   | `CLOUDINARY_URL` | optional |
-   | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | optional |
-
-   Note the service's Render URL (e.g. `https://collabrix-backend.onrender.com`) and copy its **Deploy Hook** URL (Settings → Deploy Hook).
-
-4. **Render frontend service** — New → Web Service → Deploy an existing image → `<namespace>/collabrix-frontend:latest`. Set:
-
-   | Variable | Value |
-   |---|---|
-   | `BACKEND_ORIGIN` | the backend service's URL from step 3 |
-
-   Copy its Deploy Hook URL too, and go back and set the backend's `CORS_ORIGIN` to this service's URL.
-
-### Required Jenkins credentials
-
-Manage Jenkins → Credentials:
-
-| Credential ID | Type | Value |
-|---|---|---|
-| `dockerhub-credentials` | Username/password | Docker Hub username + access token |
-| `render-backend-deploy-hook` | Secret text | backend service's deploy hook URL (step 3) |
-| `render-frontend-deploy-hook` | Secret text | frontend service's deploy hook URL (step 4) |
-
-Once these exist, every push to `main` builds, tests, pushes images, and deploys automatically.
+Deployment is handled entirely by Render, which connects directly to the GitHub repo and builds `backend/Dockerfile` / `frontend/Dockerfile` on its own infrastructure whenever `main` changes — no registry, no deploy hooks, no GitHub Actions involvement needed for that part.
 
 ## Project structure
 
 ```
 backend/    NestJS API — Prisma + PostgreSQL, JWT auth, RBAC, Socket.io gateway
 frontend/   React + Vite + Tailwind SPA — React Query, @dnd-kit, React Router
-Jenkinsfile CI/CD pipeline (Docker Hub + Render)
+.github/workflows/  CI checks (lint/build/test)
 docker-compose.yml  Local full-stack orchestration
 ```
