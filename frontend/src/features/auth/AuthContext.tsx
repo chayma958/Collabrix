@@ -37,6 +37,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .finally(() => setIsLoading(false));
   }, []);
 
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key !== TOKEN_KEY) return;
+
+      if (event.newValue) {
+        setAuthToken(event.newValue);
+        authApi
+          .me()
+          .then(setUser)
+          .catch(() => {
+            localStorage.removeItem(TOKEN_KEY);
+            setAuthToken(null);
+            setUser(null);
+          });
+      } else {
+        setAuthToken(null);
+        setUser(null);
+        disconnectSocket();
+      }
+    }
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   function applySession(accessToken: string, nextUser: User) {
     localStorage.setItem(TOKEN_KEY, accessToken);
     setAuthToken(accessToken);
