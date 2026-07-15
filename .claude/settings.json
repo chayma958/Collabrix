@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sleep 8; tail -5 /tmp/collabrix-backend3.log)",
+      "Read(//tmp/**)"
+    ]
+  }
+}
