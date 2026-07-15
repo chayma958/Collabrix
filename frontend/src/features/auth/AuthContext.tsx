@@ -3,6 +3,7 @@ import { authApi } from './api';
 import { setAuthToken } from '@/lib/api-client';
 import { TOKEN_KEY } from '@/lib/token';
 import { disconnectSocket } from '@/lib/socket';
+import { queryClient } from '@/lib/query-client';
 import type { User } from '@/types/user';
 
 interface AuthContextValue {
@@ -55,6 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthToken(null);
         setUser(null);
         disconnectSocket();
+        queryClient.clear();
       }
     }
 
@@ -88,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAuthToken(null);
     setUser(null);
     disconnectSocket();
+    queryClient.clear();
   }
 
   return (
