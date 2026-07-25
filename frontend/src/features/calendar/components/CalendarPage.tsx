@@ -202,7 +202,7 @@ export function CalendarPage() {
       <Link to={`/workspaces/${workspaceId}`} className="text-sm text-muted hover:underline">
         ← Back to workspace
       </Link>
-      <div className="mb-4 mt-2 flex items-center gap-3">
+      <div className="mb-4 mt-6 flex items-center gap-3">
         <h1 className="text-xl font-semibold text-text">{monthLabel}</h1>
         <Button variant="secondary" onClick={goToPrevMonth}>
           ← Prev

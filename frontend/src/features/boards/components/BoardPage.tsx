@@ -131,7 +131,7 @@ export function BoardPage() {
       >
         ← Back to workspace
       </Link>
-      <div className="mb-4 mt-2 flex items-center justify-between gap-4">
+      <div className="mb-4 mt-6 flex items-center justify-between gap-4">
         {canManageBoard ? (
           <Input
             value={boardName}

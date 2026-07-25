@@ -22,7 +22,7 @@ export function AnalyticsPage() {
       <Link to={`/workspaces/${workspaceId}`} className="text-sm text-muted hover:underline">
         ← Back to workspace
       </Link>
-      <h1 className="mb-6 mt-2 text-xl font-semibold text-text">Analytics</h1>
+      <h1 className="mb-6 mt-6 text-xl font-semibold text-text">Analytics</h1>
 
       {isLoading && <p className="text-muted">Loading…</p>}
 

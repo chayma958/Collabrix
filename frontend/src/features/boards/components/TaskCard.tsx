@@ -1,16 +1,9 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { Task, TaskPriority } from '@/types/board';
+import type { Task } from '@/types/board';
 import { PriorityBadge, LabelBadge } from '@/components/ui/Badge';
 import { Avatar } from '@/components/ui/Avatar';
 import { cn } from '@/lib/cn';
-
-const PRIORITY_BORDER_CLASSES: Record<TaskPriority, string> = {
-  LOW: 'border-l-priority-low',
-  MEDIUM: 'border-l-priority-medium',
-  HIGH: 'border-l-priority-high',
-  URGENT: 'border-l-priority-urgent',
-};
 
 export function TaskCard({
   task,
@@ -42,8 +35,7 @@ export function TaskCard({
       {...listeners}
       onClick={onOpen}
       className={cn(
-        'cursor-pointer rounded-lg border border-l-4 border-border bg-bg p-3 shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/40 hover:shadow-md',
-        PRIORITY_BORDER_CLASSES[task.priority],
+        'cursor-pointer rounded-lg border border-border bg-bg p-3 shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/40 hover:shadow-md',
         isDimmed && 'opacity-30',
         isDragging && 'shadow-lg',
       )}
