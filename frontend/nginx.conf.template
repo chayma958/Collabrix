@@ -1,3 +1,5 @@
+resolver ${NGINX_LOCAL_RESOLVERS} valid=10s;
+
 server {
     listen 80;
     server_name _;
@@ -5,10 +7,8 @@ server {
     index index.html;
 
     location /api/ {
-        proxy_pass ${BACKEND_ORIGIN}/api/;
-        # Required for HTTPS upstreams behind SNI-based routing (e.g. Render's
-        # Cloudflare edge) — without it, nginx doesn't tell the upstream which
-        # host it's asking for, and the Host header below must match too.
+        set $backend ${BACKEND_ORIGIN};
+        proxy_pass $backend$request_uri;
         proxy_ssl_server_name on;
         proxy_set_header Host $proxy_host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -16,7 +16,8 @@ server {
     }
 
     location /socket.io/ {
-        proxy_pass ${BACKEND_ORIGIN}/socket.io/;
+        set $backend ${BACKEND_ORIGIN};
+        proxy_pass $backend$request_uri;
         proxy_ssl_server_name on;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
